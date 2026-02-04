@@ -1,0 +1,28 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Storage contents (keep the folder, ignore its contents)
+/storage/*
+!/storage/.gitkeep
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Build output
+/public/js/
+/public/css/
+
+# Cache / temp
+*.tmp
+*.temp

@@ -1,0 +1,24 @@
+{
+  "name": "licitaciones-app-frontend",
+  "private": true,
+  "scripts": {
+    "dev": "npx mix",
+    "watch": "npx mix watch",
+    "prod": "npx mix --production"
+  },
+  "devDependencies": {
+    "laravel-mix": "^6.0.0",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^4.0.0",
+    "sass": "^1.32.0",
+    "sass-loader": "^10.0.0",
+    "vue-loader": "^16.0.0",
+    "babel-loader": "^8.0.0",
+    "@babel/core": "^7.0.0",
+    "css-loader": "^5.0.0"
+  },
+  "dependencies": {
+    "vue": "^3.2.0",
+    "bootstrap": "^5.0.0"
+  }
+}
