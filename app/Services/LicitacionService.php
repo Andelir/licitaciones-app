@@ -3,6 +3,7 @@ namespace App\Services;
 
 use App\Models\Licitacion;
 use App\Models\DocumentoLicitacion;
+use App\Models\Actividad;
 use Exception;
 
 class LicitacionService
@@ -130,7 +131,7 @@ class LicitacionService
     public function getLicitacionById(int $id): ?Licitacion
     {
         try {
-            return Licitacion::with('documentos')->find($id);
+            return Licitacion::with(['documentos', 'actividad'])->find($id);
         } catch (Exception $e) {
             throw new Exception('Error al buscar licitación: ' . $e->getMessage());
         }
@@ -163,7 +164,7 @@ class LicitacionService
                 'descripcion' => trim($data['descripcion']),
                 'presupuesto' => $this->formatPresupuesto($data['presupuesto']),
                 'moneda' => trim($data['moneda']),
-                'actividad_id' => !empty($data['actividad_id']) ? (int)$data['actividad_id'] : null,
+                'actividad_id' => (int)$data['actividad_id'],
                 'fecha_inicio' => $data['fecha_inicio'],
                 'hora_inicio' => $data['hora_inicio'],
                 'fecha_cierre' => $data['fecha_cierre'],
@@ -202,6 +203,8 @@ class LicitacionService
                                      'fecha_inicio', 'hora_inicio', 'fecha_cierre', 'hora_cierre'])) {
                     if ($key === 'presupuesto' && !empty($value)) {
                         $licitacion->$key = $this->formatPresupuesto($value);
+                    } elseif ($key === 'actividad_id') {
+                        $licitacion->$key = (int)$value;
                     } else {
                         $licitacion->$key = $value;
                     }
@@ -215,23 +218,6 @@ class LicitacionService
         }
     }
 
-    /**
-     * Eliminar una licitación
-     */
-    public function deleteLicitacion(int $id): bool
-    {
-        $licitacion = $this->getLicitacionById($id);
-        
-        if (!$licitacion) {
-            throw new Exception('Licitación no encontrada');
-        }
-
-        try {
-            return $licitacion->delete();
-        } catch (Exception $e) {
-            throw new Exception('Error al eliminar la licitación: ' . $e->getMessage());
-        }
-    }
 
     /**
      * Cargar documento asociado a una licitación
@@ -374,6 +360,22 @@ class LicitacionService
             }
         }
 
+        // Validación: actividad_id (obligatorio y existente)
+        $actividadIdProvided = array_key_exists('actividad_id', $data);
+        $actividadId = $data['actividad_id'] ?? null;
+        if (!$isUpdate || $actividadIdProvided) {
+            if (empty($actividadId)) {
+                $errors['actividad_name'] = 'La actividad es obligatoria.';
+            } else {
+                $actividad = Actividad::find((int)$actividadId);
+                if (!$actividad) {
+                    $errors['actividad_name'] = 'La actividad seleccionada no existe.';
+                }
+            }
+        } elseif ($isUpdate && !$actividadIdProvided) {
+            $errors['actividad_name'] = 'La actividad es obligatoria.';
+        }
+
         // Validación: fecha_inicio (obligatorio, formato válido)
         $fechaInicio = $data['fecha_inicio'] ?? '';
         if (!$isUpdate || isset($data['fecha_inicio'])) {
@@ -391,7 +393,7 @@ class LicitacionService
         if (!$isUpdate || isset($data['hora_inicio'])) {
             if (empty($horaInicio)) {
                 $errors['hora_inicio'] = 'La hora de inicio es obligatoria.';
-            } elseif (!preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $horaInicio)) {
+            } elseif (!preg_match('/^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/', $horaInicio)) {
                 $errors['hora_inicio'] = 'Formato de hora inválido (HH:mm 24h).';
             }
         }
@@ -415,7 +417,7 @@ class LicitacionService
         if (!$isUpdate || isset($data['hora_cierre'])) {
             if (empty($horaCierre)) {
                 $errors['hora_cierre'] = 'La hora de cierre es obligatoria.';
-            } elseif (!preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $horaCierre)) {
+            } elseif (!preg_match('/^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/', $horaCierre)) {
                 $errors['hora_cierre'] = 'Formato de hora inválido (HH:mm 24h).';
             } elseif (!empty($fechaInicio) && !empty($fechaCierre) && 
                       $fechaInicio === $fechaCierre && 

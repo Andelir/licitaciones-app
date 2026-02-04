@@ -8,8 +8,6 @@
 /** @var \App\Core\Router $router */
 
 $router->get('/licitaciones', 'LicitacionController@listLicitaciones');
-
-// Web: forms para crear/editar/ver
 $router->get('/licitaciones/create', 'LicitacionController@createForm');
 $router->get('/licitaciones/{id:\d+}', 'LicitacionController@viewForm');
 $router->get('/licitaciones/{id:\d+}/edit', 'LicitacionController@editForm');

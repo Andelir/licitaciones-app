@@ -1,89 +1,97 @@
 export default {
-    data() {
-        return {
-            licitacion: null,
-            loading: true,
-            error: null,
-            activeTab: 'general',
-            showConfirmDelete: false,
-            deletingId: null
-        };
+  data() {
+    return {
+      licitacion: null,
+      loading: true,
+      error: null,
+      activeTab: 'general',
+      showConfirmDelete: false,
+      deletingId: null
+    };
+  },
+  computed: {
+    licitacionId() {
+      // Extraer ID de la URL actual
+      const match = window.location.pathname.match(/\/licitaciones\/(\d+)/);
+      return match ? parseInt(match[1]) : null;
     },
-    computed: {
-        licitacionId() {
-            // Extraer ID de la URL actual
-            const match = window.location.pathname.match(/\/licitaciones\/(\d+)/);
-            return match ? parseInt(match[1]) : null;
-        },
-        formattedFechaInicio() {
-            return this.licitacion?.fecha_inicio ? new Date(this.licitacion.fecha_inicio).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
-        },
-        formattedFechaCierre() {
-            return this.licitacion?.fecha_cierre ? new Date(this.licitacion.fecha_cierre).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
-        },
-        formattedCreado() {
-            if (!this.licitacion?.creado_en) return '-';
-            const date = new Date(this.licitacion.creado_en);
-            return date.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        },
-        estadoBadgeClass() {
-            const estadoMap = {
-                'ACTIVO': 'success',
-                'CERRADO': 'danger',
-                'CANCELADO': 'secondary',
-                'PAUSADO': 'warning'
-            };
-            return 'bg-' + (estadoMap[this.licitacion?.estado] || 'secondary');
+    formattedFechaInicio() {
+      return this.licitacion?.fecha_inicio ? new Date(this.licitacion.fecha_inicio).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+    },
+    formattedFechaCierre() {
+      return this.licitacion?.fecha_cierre ? new Date(this.licitacion.fecha_cierre).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+    },
+    formattedCreado() {
+      if (!this.licitacion?.creado_en) return '-';
+      const date = new Date(this.licitacion.creado_en);
+      return date.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    },
+    estadoBadgeClass() {
+      const estadoMap = {
+        'ACTIVO': 'success',
+        'CERRADO': 'danger',
+        'CANCELADO': 'secondary',
+        'PAUSADO': 'warning'
+      };
+      return 'bg-' + (estadoMap[this.licitacion?.estado] || 'secondary');
+    },
+    actividadDisplay() {
+      if (!this.licitacion?.actividad) return '-';
+      const act = this.licitacion.actividad || {};
+      const codigo = act.codigo_producto || '';
+      const producto = act.producto || '';
+      const display = `${codigo} - ${producto}`.trim();
+      return display !== '-' ? display : (producto || codigo || '-');
+    }
+  },
+  async created() {
+    await this.loadLicitacion();
+  },
+  methods: {
+    async loadLicitacion() {
+      if (!this.licitacionId) {
+        this.error = 'ID de licitación no válido';
+        this.loading = false;
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/licitaciones/${this.licitacionId}`);
+        if (!res.ok) {
+          if (res.status === 404) {
+            this.error = 'Licitación no encontrada';
+          } else {
+            this.error = 'Error al cargar la licitación';
+          }
+          this.loading = false;
+          return;
         }
-    },
-    async created() {
-        await this.loadLicitacion();
-    },
-    methods: {
-        async loadLicitacion() {
-            if (!this.licitacionId) {
-                this.error = 'ID de licitación no válido';
-                this.loading = false;
-                return;
-            }
 
-            try {
-                const res = await fetch(`/api/licitaciones/${this.licitacionId}`);
-                if (!res.ok) {
-                    if (res.status === 404) {
-                        this.error = 'Licitación no encontrada';
-                    } else {
-                        this.error = 'Error al cargar la licitación';
-                    }
-                    this.loading = false;
-                    return;
-                }
+        const json = await res.json();
+        this.licitacion = json.data || null;
 
-                const json = await res.json();
-                this.licitacion = json.data || null;
-
-                if (!this.licitacion) {
-                    this.error = 'No se pudo cargar la información';
-                }
-            } catch (e) {
-                console.error(e);
-                this.error = 'Error de conexión al servidor';
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        goToEdit() {
-            if (this.licitacionId) {
-                window.location.href = `/licitaciones/${this.licitacionId}/edit`;
-            }
-        },
-
-        switchTab(tab) {
-            this.activeTab = tab;
+        if (!this.licitacion) {
+          this.error = 'No se pudo cargar la información';
         }
+      } catch (e) {
+        console.error(e);
+        this.error = 'Error de conexión al servidor';
+      } finally {
+        this.loading = false;
+      }
     },
-    template: `
+
+    goToEdit() {
+      if (this.licitacionId) {
+        window.location.href = `/licitaciones/${this.licitacionId}/edit`;
+      }
+    },
+
+    switchTab(tab) {
+      this.activeTab = tab;
+    }
+  },
+  template: `
     <div class="container-fluid mt-4">
       <!-- Loading State -->
       <div v-if="loading" class="text-center py-5">
@@ -217,6 +225,25 @@ export default {
                   <div class="mb-3">
                     <label class="form-label text-muted small fw-600">Estado</label>
                     <p class="mb-0"><span :class="['badge', estadoBadgeClass]">{{ licitacion.estado || 'ACTIVO' }}</span></p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label text-muted small fw-600">Actividad</label>
+                    <p class="mb-0 fs-5">{{ actividadDisplay }}</p>
+                  </div>
+                </div>
+                <div class="col-md-6" v-if="licitacion.actividad">
+                  <div class="mb-3">
+                    <label class="form-label text-muted small fw-600">Clasificación</label>
+                    <p class="mb-0 text-muted">
+                      {{ licitacion.actividad.codigo_segmento }} - {{ licitacion.actividad.segmento }}
+                      <span v-if="licitacion.actividad.codigo_familia"> / {{ licitacion.actividad.codigo_familia }} - {{ licitacion.actividad.familia }}</span>
+                      <span v-if="licitacion.actividad.codigo_clase"> / {{ licitacion.actividad.codigo_clase }} - {{ licitacion.actividad.clase }}</span>
+                    </p>
                   </div>
                 </div>
               </div>

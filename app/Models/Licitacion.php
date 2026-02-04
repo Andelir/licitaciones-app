@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use App\Models\DocumentoLicitacion;
+use App\Models\Actividad;
 
 class Licitacion extends EloquentModel
 {
@@ -21,5 +22,10 @@ class Licitacion extends EloquentModel
     public function documentos()
     {
         return $this->hasMany(DocumentoLicitacion::class, 'licitacion_id');
+    }
+
+    public function actividad()
+    {
+        return $this->belongsTo(Actividad::class, 'actividad_id');
     }
 }

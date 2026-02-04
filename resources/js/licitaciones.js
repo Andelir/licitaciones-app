@@ -4,13 +4,13 @@ const Licitaciones = {
             licitaciones: [],
             loading: false,
             error: null,
-            
+
             // Paginación
             currentPage: 1,
             itemsPerPage: 10,
             totalPages: 0,
             totalRecords: 0,
-            
+
             // Filtros
             searchQuery: '',
             searchField: 'todos', // 'todos', 'consecutivo', 'objeto', 'descripcion'
@@ -34,18 +34,18 @@ const Licitaciones = {
                 }
                 params.append('page', page);
                 params.append('limit', this.itemsPerPage);
-                
+
                 const res = await fetch(`/api/licitaciones?${params.toString()}`);
                 const json = await res.json();
-                
+
                 if (json.success === false) {
                     this.error = json.message || 'Error al cargar licitaciones';
                     this.licitaciones = [];
                     return;
                 }
-                
+
                 this.licitaciones = json.data || [];
-                
+
                 // Actualizar información de paginación
                 if (json.pagination) {
                     this.currentPage = json.pagination.page;
@@ -60,7 +60,7 @@ const Licitaciones = {
                 this.loading = false;
             }
         },
-        
+
         onSearchChange() {
             // Debounce: esperar 500ms después de que el usuario deja de escribir
             clearTimeout(this.searchTimeout);
@@ -68,12 +68,12 @@ const Licitaciones = {
                 await this.load(1);
             }, 500);
         },
-        
+
         async goToPage(page) {
             if (page < 1 || page > this.totalPages) return;
             await this.load(page);
         },
-        
+
         async downloadReport() {
             try {
                 // Reutilizar misma lógica de filtros que en load()
@@ -82,23 +82,23 @@ const Licitaciones = {
                     params.append('search', this.searchQuery.trim());
                     params.append('field', this.searchField);
                 }
-                
+
                 const res = await fetch(`/api/licitaciones/export?${params.toString()}`);
-                
+
                 if (!res.ok) {
                     this.error = 'Error al descargar el reporte';
                     return;
                 }
-                
+
                 // Obtener nombre del archivo del header Content-Disposition
                 const contentDisposition = res.headers.get('content-disposition');
                 let fileName = 'licitaciones-reporte.xlsx';
-                
+
                 if (contentDisposition) {
                     const fileNameMatch = contentDisposition.match(/filename="?([^"\n]+)"?/);
                     if (fileNameMatch) fileName = fileNameMatch[1];
                 }
-                
+
                 // Descargar el archivo
                 const blob = await res.blob();
                 const url = window.URL.createObjectURL(blob);
@@ -114,11 +114,11 @@ const Licitaciones = {
                 this.error = 'No se pudo descargar el reporte';
             }
         },
-        
+
         viewDetail(id) {
             window.location.href = `/licitaciones/${id}`;
         },
-        
+
         getEstadoClass(estado) {
             const estadoMap = {
                 'ACTIVO': 'success',
@@ -128,13 +128,13 @@ const Licitaciones = {
             };
             return estadoMap[estado] || 'secondary';
         },
-        
+
         formatDate(dateStr) {
             if (!dateStr) return '-';
             const date = new Date(dateStr);
             return date.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
         },
-        
+
         truncateText(text, maxLength = 50) {
             if (!text) return '-';
             return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
